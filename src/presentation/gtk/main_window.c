@@ -227,6 +227,9 @@ static void load_css() {
         "  min-height: 250px;"
         "  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);"
         "}"
+        "window.transparent-bg {"
+        "  background-color: rgba(0, 0, 0, 0.5);"
+        "}"
     );
     gtk_style_context_add_provider_for_display(
         gdk_display_get_default(),
@@ -241,6 +244,7 @@ static void vcamera_main_window_init(VcameraMainWindow *self) {
     gtk_window_set_title(GTK_WINDOW(self), "vcamera");
     gtk_window_set_default_size(GTK_WINDOW(self), 800, 600);
     g_object_set(gtk_settings_get_default(), "gtk-application-prefer-dark-theme", TRUE, NULL);
+    gtk_widget_add_css_class(GTK_WIDGET(self), "transparent-bg");
 
     self->engine = camera_engine_new();
     
