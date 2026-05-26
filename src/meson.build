@@ -3,7 +3,8 @@ vcamera_sources = [
   'data/gstreamer/camera_engine.c',
   'data/gstreamer/video_recorder.c',
   'domain/use_cases/take_photo.c',
-  'presentation/gtk/main_window.c'
+  'presentation/gtk/main_window.c',
+  'theme_manager.c'
 ]
 
 executable('vcamera',

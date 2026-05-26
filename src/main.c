@@ -1,8 +1,10 @@
 #include <gtk/gtk.h>
 #include <gst/gst.h>
 #include "presentation/gtk/main_window.h"
+#include "theme_manager.h"
 
 static void on_activate(GtkApplication *app, gpointer user_data) {
+    theme_manager_init();
     VcameraMainWindow *window = vcamera_main_window_new(app);
     gtk_window_present(GTK_WINDOW(window));
 }
