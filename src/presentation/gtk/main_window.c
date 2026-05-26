@@ -185,6 +185,9 @@ static void load_css() {
         "  margin: 0 8px;"
         "  transition: all 0.2s;"
         "}"
+        ".circular image {"
+        "  color: white;"
+        "}"
         ".circular:hover {"
         "  background: rgba(255, 254, 254, 0.2);"
         "  transform: scale(1.05);"
@@ -298,7 +301,7 @@ static void vcamera_main_window_init(VcameraMainWindow *self) {
     gtk_widget_set_tooltip_text(btn_gallery, "المعرض (Gallery)");
     g_signal_connect(btn_gallery, "clicked", G_CALLBACK(on_gallery_button_clicked), self);
 
-    self->btn_qr = gtk_button_new_from_icon_name("view-barcode-symbolic"); // Default barcode icon
+    self->btn_qr = gtk_button_new_from_icon_name("qrscanner-symbolic"); // Default barcode icon
     gtk_widget_set_valign(self->btn_qr, GTK_ALIGN_CENTER);
     gtk_widget_add_css_class(self->btn_qr, "circular");
     gtk_widget_set_tooltip_text(self->btn_qr, "قراءة باركود (QR Scanner)");
