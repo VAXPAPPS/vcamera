@@ -168,7 +168,7 @@ static void load_css() {
     GtkCssProvider *provider = gtk_css_provider_new();
     gtk_css_provider_load_from_string(provider,
         ".controls-dock {"
-        "  background: rgba(30, 30, 30, 0.65);"
+        "  background: rgba(0, 0, 0, 0.3);"
         "  border-radius: 40px;"
         "  padding: 12px 24px;"
         "  margin-bottom: 30px;"
@@ -178,6 +178,7 @@ static void load_css() {
         "  border-radius: 100%;"
         "  min-width: 48px;"
         "  min-height: 48px;"
+        "  padding: 0;"
         "  background: rgba(255, 255, 255, 0.1);"
         "  color: white;"
         "  border: none;"
@@ -196,6 +197,7 @@ static void load_css() {
         "  border-radius: 100%;"
         "  min-width: 40px;"
         "  min-height: 40px;"
+        "  padding: 0;"
         "  background: white;"
         "  color: black;"
         "  margin: 0 8px;"
@@ -213,6 +215,7 @@ static void load_css() {
         "  border-radius: 100%;"
         "  min-width: 40px;"
         "  min-height: 40px;"
+        "  padding: 0;"
         "  background: #ff3b30;"
         "  color: white;"
         "  margin: 0 8px;"
