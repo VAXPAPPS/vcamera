@@ -32,6 +32,20 @@ static gboolean remove_flash(gpointer user_data) {
     return G_SOURCE_REMOVE;
 }
 
+static void on_gallery_button_clicked(GtkButton *btn, gpointer user_data) {
+    const char *pictures_dir = g_get_user_special_dir(G_USER_DIRECTORY_PICTURES);
+    if (!pictures_dir) pictures_dir = g_get_home_dir();
+    
+    g_autofree char *uri = g_filename_to_uri(pictures_dir, NULL, NULL);
+    if (uri) {
+        GError *error = NULL;
+        if (!g_app_info_launch_default_for_uri(uri, NULL, &error)) {
+            g_printerr("Failed to open gallery: %s\n", error->message);
+            g_clear_error(&error);
+        }
+    }
+}
+
 static void on_photo_button_clicked(GtkButton *btn, gpointer user_data) {
     VcameraMainWindow *self = VCAMERA_MAIN_WINDOW(user_data);
     if (!self->last_texture) return;
@@ -174,6 +188,7 @@ static void vcamera_main_window_init(VcameraMainWindow *self) {
     GtkWidget *btn_gallery = gtk_button_new_from_icon_name("folder-pictures-symbolic");
     gtk_widget_add_css_class(btn_gallery, "circular");
     gtk_widget_set_tooltip_text(btn_gallery, "المعرض (Gallery)");
+    g_signal_connect(btn_gallery, "clicked", G_CALLBACK(on_gallery_button_clicked), self);
 
     GtkWidget *btn_photo = gtk_button_new_from_icon_name("camera-photo-symbolic");
     gtk_widget_add_css_class(btn_photo, "camera-btn");
@@ -185,14 +200,9 @@ static void vcamera_main_window_init(VcameraMainWindow *self) {
     g_signal_connect(self->record_btn, "clicked", G_CALLBACK(on_record_button_clicked), self);
     gtk_widget_set_tooltip_text(self->record_btn, "تسجيل فيديو (Record Video)");
     
-    GtkWidget *btn_settings = gtk_button_new_from_icon_name("emblem-system-symbolic");
-    gtk_widget_add_css_class(btn_settings, "circular");
-    gtk_widget_set_tooltip_text(btn_settings, "الإعدادات (Settings)");
-
     gtk_box_append(GTK_BOX(dock), btn_gallery);
     gtk_box_append(GTK_BOX(dock), btn_photo);
     gtk_box_append(GTK_BOX(dock), self->record_btn);
-    gtk_box_append(GTK_BOX(dock), btn_settings);
 
     self->frame_ready_handler_id = g_signal_connect(self->engine, "frame-ready", G_CALLBACK(on_frame_ready), self);
     camera_engine_start(self->engine);
