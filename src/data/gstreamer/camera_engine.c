@@ -143,20 +143,26 @@ static GstFlowReturn on_new_sample(GstAppSink *sink, gpointer user_data) {
         gchar *found_qr = NULL;
         if (self->qr_mode_enabled && self->frame_counter++ % 10 == 0) {
             zbar_image_t *img = zbar_image_create();
-            // GStreamer format=RGB is packed RGB. ZBar expects RGB3
-            zbar_image_set_format(img, zbar_fourcc('R','G','B','3'));
+            zbar_image_set_format(img, zbar_fourcc('Y','8','0','0'));
             zbar_image_set_size(img, width, height);
-            zbar_image_set_data(img, map.data, map.size, NULL);
+            
+            // Manual RGB to Y800 (Grayscale) conversion guarantees ZBar can process it reliably
+            int y_size = width * height;
+            guint8 *y_data = g_malloc(y_size);
+            for (int i = 0; i < y_size; i++) {
+                y_data[i] = (guint8)((map.data[i*3] * 77 + map.data[i*3+1] * 150 + map.data[i*3+2] * 29) >> 8);
+            }
+            zbar_image_set_data(img, y_data, y_size, NULL);
             
             if (zbar_scan_image(self->scanner, img) > 0) {
                 const zbar_symbol_t *symbol = zbar_image_first_symbol(img);
                 if (symbol) {
                     found_qr = g_strdup(zbar_symbol_get_data(symbol));
-                    // Auto-disable QR mode to avoid spamming the UI
                     self->qr_mode_enabled = FALSE; 
                 }
             }
             zbar_image_destroy(img);
+            g_free(y_data);
         }
 
         // Live Feed UI logic
@@ -186,6 +192,8 @@ static void camera_engine_init(CameraEngine *self) {
     
     self->scanner = zbar_image_scanner_create();
     zbar_image_scanner_set_config(self->scanner, 0, ZBAR_CFG_ENABLE, 1);
+    zbar_image_scanner_set_config(self->scanner, 0, ZBAR_CFG_X_DENSITY, 1);
+    zbar_image_scanner_set_config(self->scanner, 0, ZBAR_CFG_Y_DENSITY, 1);
 
     self->pipeline = gst_parse_launch("v4l2src ! videoconvert ! video/x-raw,format=RGB ! appsink name=sink drop=true max-buffers=1 emit-signals=true sync=true", &error);
     
