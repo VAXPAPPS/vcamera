@@ -1,0 +1,8 @@
+Package: vcamera
+Version: 1.0.0
+Section: video
+Priority: optional
+Architecture: amd64
+Maintainer: Developer <dev@example.com>
+Description: A native and clean GTK4 Camera Application with QR support.
+Depends: libgtk-4-1, libgstreamer1.0-0, libgstreamer-plugins-base1.0-0

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=VCamera
+Comment=Take photos and record videos
+Exec=vcamera
+Icon=vcamera
+Terminal=false
+Type=Application
+Categories=AudioVideo;Video;Graphics;Photography;GNOME;GTK;
+Keywords=Camera;Video;Photo;Record;Webcam;QR;Barcode;Scanner;كاميرا;فيديو;صور;تسجيل;باركود;
+MimeType=image/jpeg;image/png;video/mp4;video/webm;
