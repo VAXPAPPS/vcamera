@@ -175,19 +175,30 @@ static void load_css() {
         "  box-shadow: 0 10px 40px rgba(0,0,0,0.6);"
         "}"
         ".circular {"
+        "  border-radius: 100%;"
+        "  min-width: 48px;"
+        "  min-height: 48px;"
+        "  background: rgba(255, 255, 255, 0.1);"
+        "  color: white;"
+        "  border: none;"
+        "  margin: 0 8px;"
         "  transition: all 0.2s;"
+        "}"
+        ".circular:hover {"
+        "  background: rgba(255, 254, 254, 0.2);"
+        "  transform: scale(1.05);"
         "}"
         ".circular.active {"
         "  background: #0a84ff;"
         "  color: white;"
         "}"
         ".camera-btn {"
-        "  border-radius: 50%;"
-        "  min-width: 68px;"
-        "  min-height: 68px;"
+        "  border-radius: 100%;"
+        "  min-width: 40px;"
+        "  min-height: 40px;"
         "  background: white;"
         "  color: black;"
-        "  margin: 0 16px;"
+        "  margin: 0 8px;"
         "  border: 4px solid #dddddd;"
         "  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);"
         "}"
@@ -199,12 +210,12 @@ static void load_css() {
         "  transform: scale(0.92);"
         "}"
         ".record-btn {"
-        "  border-radius: 50%;"
-        "  min-width: 68px;"
-        "  min-height: 68px;"
+        "  border-radius: 100%;"
+        "  min-width: 40px;"
+        "  min-height: 40px;"
         "  background: #ff3b30;"
         "  color: white;"
-        "  margin: 0 16px;"
+        "  margin: 0 8px;"
         "  border: 4px solid rgba(255, 59, 48, 0.3);"
         "  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);"
         "}"
@@ -279,21 +290,25 @@ static void vcamera_main_window_init(VcameraMainWindow *self) {
     gtk_overlay_add_overlay(GTK_OVERLAY(overlay), bottom_center_box);
 
     GtkWidget *btn_gallery = gtk_button_new_from_icon_name("folder-pictures-symbolic");
+    gtk_widget_set_valign(btn_gallery, GTK_ALIGN_CENTER);
     gtk_widget_add_css_class(btn_gallery, "circular");
     gtk_widget_set_tooltip_text(btn_gallery, "المعرض (Gallery)");
     g_signal_connect(btn_gallery, "clicked", G_CALLBACK(on_gallery_button_clicked), self);
 
     self->btn_qr = gtk_button_new_from_icon_name("view-barcode-symbolic"); // Default barcode icon
+    gtk_widget_set_valign(self->btn_qr, GTK_ALIGN_CENTER);
     gtk_widget_add_css_class(self->btn_qr, "circular");
     gtk_widget_set_tooltip_text(self->btn_qr, "قراءة باركود (QR Scanner)");
     g_signal_connect(self->btn_qr, "clicked", G_CALLBACK(on_qr_button_clicked), self);
 
     GtkWidget *btn_photo = gtk_button_new_from_icon_name("camera-photo-symbolic");
+    gtk_widget_set_valign(btn_photo, GTK_ALIGN_CENTER);
     gtk_widget_add_css_class(btn_photo, "camera-btn");
     g_signal_connect(btn_photo, "clicked", G_CALLBACK(on_photo_button_clicked), self);
     gtk_widget_set_tooltip_text(btn_photo, "التقاط صورة (Take Photo)");
 
     self->record_btn = gtk_button_new_from_icon_name("media-record-symbolic");
+    gtk_widget_set_valign(self->record_btn, GTK_ALIGN_CENTER);
     gtk_widget_add_css_class(self->record_btn, "record-btn");
     g_signal_connect(self->record_btn, "clicked", G_CALLBACK(on_record_button_clicked), self);
     gtk_widget_set_tooltip_text(self->record_btn, "تسجيل فيديو (Record Video)");
