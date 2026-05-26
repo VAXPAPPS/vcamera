@@ -15,4 +15,6 @@ void camera_engine_stop(CameraEngine *self);
 void camera_engine_start_recording(CameraEngine *self, const char *filepath);
 void camera_engine_stop_recording(CameraEngine *self);
 
+void camera_engine_set_qr_mode(CameraEngine *self, gboolean enabled);
+
 G_END_DECLS

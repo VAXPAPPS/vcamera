@@ -12,6 +12,11 @@ struct _VcameraMainWindow {
     GtkWidget *record_btn;
     gboolean is_recording;
     gulong frame_ready_handler_id;
+    gulong qr_detected_handler_id;
+
+    GtkWidget *btn_qr;
+    GtkWidget *qr_reticle;
+    gboolean qr_mode_active;
 };
 
 G_DEFINE_TYPE(VcameraMainWindow, vcamera_main_window, GTK_TYPE_APPLICATION_WINDOW)
@@ -24,6 +29,66 @@ static void on_frame_ready(CameraEngine *engine, GdkTexture *texture, gpointer u
         g_object_unref(self->last_texture);
     }
     self->last_texture = g_object_ref(texture);
+}
+
+static void on_qr_dialog_response(GtkDialog *dialog, int response_id, gpointer user_data) {
+    char *qr_data = (char *)user_data;
+    if (response_id == GTK_RESPONSE_ACCEPT) {
+        GdkClipboard *cb = gdk_display_get_clipboard(gdk_display_get_default());
+        gdk_clipboard_set_text(cb, qr_data);
+    } else if (response_id == GTK_RESPONSE_APPLY) {
+        GError *error = NULL;
+        if (!g_app_info_launch_default_for_uri(qr_data, NULL, &error)) {
+            g_printerr("Failed to open URL: %s\n", error->message);
+            g_clear_error(&error);
+        }
+    }
+    g_free(qr_data);
+    gtk_window_destroy(GTK_WINDOW(dialog));
+}
+
+static void on_qr_detected(CameraEngine *engine, const char *qr_data, gpointer user_data) {
+    VcameraMainWindow *self = VCAMERA_MAIN_WINDOW(user_data);
+    
+    // Auto turn-off QR Mode
+    self->qr_mode_active = FALSE;
+    gtk_widget_remove_css_class(self->btn_qr, "active");
+    gtk_widget_set_visible(self->qr_reticle, FALSE);
+    camera_engine_set_qr_mode(self->engine, FALSE);
+
+    GtkWidget *dialog = gtk_message_dialog_new(GTK_WINDOW(self),
+                                               GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+                                               GTK_MESSAGE_INFO,
+                                               GTK_BUTTONS_NONE,
+                                               "تم التقاط رمز QR!");
+    
+    gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(dialog), "%s", qr_data);
+
+    gtk_dialog_add_button(GTK_DIALOG(dialog), "نسخ النص", GTK_RESPONSE_ACCEPT);
+    
+    if (g_str_has_prefix(qr_data, "http://") || g_str_has_prefix(qr_data, "https://")) {
+        gtk_dialog_add_button(GTK_DIALOG(dialog), "فتح الرابط", GTK_RESPONSE_APPLY);
+    }
+    
+    gtk_dialog_add_button(GTK_DIALOG(dialog), "إغلاق", GTK_RESPONSE_CLOSE);
+
+    g_signal_connect(dialog, "response", G_CALLBACK(on_qr_dialog_response), g_strdup(qr_data));
+    gtk_window_present(GTK_WINDOW(dialog));
+}
+
+static void on_qr_button_clicked(GtkButton *btn, gpointer user_data) {
+    VcameraMainWindow *self = VCAMERA_MAIN_WINDOW(user_data);
+    
+    self->qr_mode_active = !self->qr_mode_active;
+    camera_engine_set_qr_mode(self->engine, self->qr_mode_active);
+    
+    if (self->qr_mode_active) {
+        gtk_widget_add_css_class(self->btn_qr, "active");
+        gtk_widget_set_visible(self->qr_reticle, TRUE);
+    } else {
+        gtk_widget_remove_css_class(self->btn_qr, "active");
+        gtk_widget_set_visible(self->qr_reticle, FALSE);
+    }
 }
 
 static gboolean remove_flash(gpointer user_data) {
@@ -65,7 +130,6 @@ static void on_record_button_clicked(GtkButton *btn, gpointer user_data) {
         
         const char *videos_dir = g_get_user_special_dir(G_USER_DIRECTORY_VIDEOS);
         if (!videos_dir) videos_dir = g_get_home_dir();
-        // Use webm extension as we will switch to vp8enc
         g_autofree char *filename = g_strdup_printf("%s/vcamera_vid_%ld.webm", videos_dir, g_get_real_time());
         
         camera_engine_start_recording(self->engine, filename);
@@ -86,6 +150,10 @@ static void vcamera_main_window_dispose(GObject *object) {
             g_signal_handler_disconnect(self->engine, self->frame_ready_handler_id);
             self->frame_ready_handler_id = 0;
         }
+        if (self->qr_detected_handler_id > 0) {
+            g_signal_handler_disconnect(self->engine, self->qr_detected_handler_id);
+            self->qr_detected_handler_id = 0;
+        }
         camera_engine_stop(self->engine);
         g_clear_object(&self->engine);
     }
@@ -105,6 +173,13 @@ static void load_css() {
         "  padding: 12px 24px;"
         "  margin-bottom: 30px;"
         "  box-shadow: 0 10px 40px rgba(0,0,0,0.6);"
+        "}"
+        ".circular {"
+        "  transition: all 0.2s;"
+        "}"
+        ".circular.active {"
+        "  background: #0a84ff;"
+        "  color: white;"
         "}"
         ".camera-btn {"
         "  border-radius: 50%;"
@@ -145,6 +220,13 @@ static void load_css() {
         "  background-color: white;"
         "  opacity: 0.85;"
         "}"
+        ".qr-reticle {"
+        "  border: 4px dashed rgba(255, 255, 255, 0.8);"
+        "  border-radius: 20px;"
+        "  min-width: 250px;"
+        "  min-height: 250px;"
+        "  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);"
+        "}"
     );
     gtk_style_context_add_provider_for_display(
         gdk_display_get_default(),
@@ -170,6 +252,13 @@ static void vcamera_main_window_init(VcameraMainWindow *self) {
     gtk_widget_set_valign(self->picture, GTK_ALIGN_FILL);
     gtk_widget_set_halign(self->picture, GTK_ALIGN_FILL);
     gtk_overlay_set_child(GTK_OVERLAY(overlay), self->picture);
+
+    self->qr_reticle = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_widget_add_css_class(self->qr_reticle, "qr-reticle");
+    gtk_widget_set_visible(self->qr_reticle, FALSE);
+    gtk_widget_set_halign(self->qr_reticle, GTK_ALIGN_CENTER);
+    gtk_widget_set_valign(self->qr_reticle, GTK_ALIGN_CENTER);
+    gtk_overlay_add_overlay(GTK_OVERLAY(overlay), self->qr_reticle);
     
     self->flash_overlay = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_widget_add_css_class(self->flash_overlay, "flash-effect");
@@ -190,6 +279,11 @@ static void vcamera_main_window_init(VcameraMainWindow *self) {
     gtk_widget_set_tooltip_text(btn_gallery, "المعرض (Gallery)");
     g_signal_connect(btn_gallery, "clicked", G_CALLBACK(on_gallery_button_clicked), self);
 
+    self->btn_qr = gtk_button_new_from_icon_name("view-barcode-symbolic"); // Default barcode icon
+    gtk_widget_add_css_class(self->btn_qr, "circular");
+    gtk_widget_set_tooltip_text(self->btn_qr, "قراءة باركود (QR Scanner)");
+    g_signal_connect(self->btn_qr, "clicked", G_CALLBACK(on_qr_button_clicked), self);
+
     GtkWidget *btn_photo = gtk_button_new_from_icon_name("camera-photo-symbolic");
     gtk_widget_add_css_class(btn_photo, "camera-btn");
     g_signal_connect(btn_photo, "clicked", G_CALLBACK(on_photo_button_clicked), self);
@@ -203,8 +297,10 @@ static void vcamera_main_window_init(VcameraMainWindow *self) {
     gtk_box_append(GTK_BOX(dock), btn_gallery);
     gtk_box_append(GTK_BOX(dock), btn_photo);
     gtk_box_append(GTK_BOX(dock), self->record_btn);
+    gtk_box_append(GTK_BOX(dock), self->btn_qr);
 
     self->frame_ready_handler_id = g_signal_connect(self->engine, "frame-ready", G_CALLBACK(on_frame_ready), self);
+    self->qr_detected_handler_id = g_signal_connect(self->engine, "qr-detected", G_CALLBACK(on_qr_detected), self);
     camera_engine_start(self->engine);
 }
 

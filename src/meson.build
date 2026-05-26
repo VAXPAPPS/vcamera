@@ -8,6 +8,6 @@ vcamera_sources = [
 
 executable('vcamera',
   vcamera_sources,
-  dependencies: [gtk_dep, gstreamer_dep, gstreamer_video_dep, gstreamer_app_dep],
+  dependencies: [gtk_dep, gstreamer_dep, gstreamer_video_dep, gstreamer_app_dep, zbar_dep],
   install: true,
 )
